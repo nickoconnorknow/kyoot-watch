@@ -1,0 +1,26 @@
+name: kyoot-watch
+on:
+  schedule:
+    - cron: "7 15 * * *"   # ~8am Pacific
+    - cron: "7 3 * * *"    # ~8pm Pacific
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: kyoot-watch
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q requests beautifulsoup4 lxml
+      - run: python watch.py
+      - name: Save seen listings
+        run: |
+          git config user.name "kyoot-watch"
+          git config user.email "kyoot-watch@users.noreply.github.com"
+          git add state.json
+          git diff --cached --quiet || git commit -m "Update seen listings" && git push
