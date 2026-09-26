@@ -34,6 +34,7 @@ PICKUP = re.compile(r"pick[\s-]?up only|local pick[\s-]?up|no shipping|"
 
 
 def is_match(title, desc=""):
+    title, desc = title or "", desc or ""
     if WANTED.search(title):
         return False
     if KYOOT.search(title) or KYOOT.search(desc):
@@ -57,7 +58,7 @@ def get(url, **kw):
 
 
 def item(source, id_, title, url, price=None, location="", pickup=False):
-    return dict(key=f"{source}:{id_}", source=source, title=title.strip(), url=url,
+    return dict(key=f"{source}:{id_}", source=source, title=(title or "").strip(), url=url,
                 price=price, location=location or "", pickup=pickup)
 
 
@@ -227,6 +228,8 @@ def main():
         name = src.__name__
         try:
             items = src()
+            matches = [i for i in items if is_match(i["title"], i.get("desc", ""))
+                       and (i["price"] is None or i["price"] < MAX_PRICE)]
         except Exception as e:
             n = state["fails"].get(name, 0) + 1
             state["fails"][name] = n
@@ -239,8 +242,6 @@ def main():
             notify(f"Kyoot watch: {name} is working again", "Source recovered.", tags="white_check_mark")
         state["fails"][name] = 0
 
-        matches = [i for i in items if is_match(i["title"], i.get("desc", ""))
-                   and (i["price"] is None or i["price"] < MAX_PRICE)]
         new = [i for i in matches if i["key"] not in state["seen"]]
         summary.append(f"{name}: {len(items)} scanned, {len(matches)} match, {len(new)} new")
         for i in new:
@@ -249,7 +250,10 @@ def main():
             body = f"{price} · {i['location'] or 'location ?'} · {name}"
             if i["pickup"]:
                 body += f"\nPICKUP ONLY — ask to ship:\n{ASK_TO_SHIP}"
-            notify(i["title"][:120], body, i["url"])
+            try:
+                notify(i["title"][:120], body, i["url"])
+            except Exception as e:
+                summary.append(f"notify failed: {e}")
 
     state["last_run"] = now  # daily commit keeps GitHub from pausing the schedule
     state["last_summary"] = summary

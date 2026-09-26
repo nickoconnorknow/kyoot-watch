@@ -17,10 +17,11 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -q requests beautifulsoup4 lxml
-      - run: python watch.py
+      - run: python watch.py 2>&1 | tee run.log
       - name: Save seen listings
+        if: always()
         run: |
           git config user.name "kyoot-watch"
           git config user.email "kyoot-watch@users.noreply.github.com"
-          git add state.json
+          git add -A
           git diff --cached --quiet || git commit -m "Update seen listings" && git push
