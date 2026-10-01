@@ -3,20 +3,20 @@
   "bikepacking_coop": 0,
   "buycycle": 0,
   "craigslist": 0,
-  "ebay": 10,
-  "offerup": 10,
-  "pinkbike": 10,
+  "ebay": 11,
+  "offerup": 11,
+  "pinkbike": 11,
   "rad_bazaar": 0
  },
- "last_run": "2026-10-01T03:24:58+00:00",
+ "last_run": "2026-10-01T15:26:07+00:00",
  "last_summary": [
   "rad_bazaar: 3 scanned, 1 match, 0 new",
   "bikepacking_coop: 61 scanned, 0 match, 0 new",
-  "ebay: FAILED (10x) 403 Client Error: Forbidden for url: https://www.ebay.com/sch/i.html?_nkw=kyoot&_sop=10&_ipg=120",
-  "pinkbike: FAILED (10x) 403 Client Error: Forbidden for url: https://www.pinkbike.com/buysell/list/?q=kyoot",
-  "offerup: FAILED (10x) 403 Client Error: Forbidden for url: https://offerup.com/search?q=kyoot",
+  "ebay: FAILED (11x) 403 Client Error: Forbidden for url: https://www.ebay.com/sch/i.html?_nkw=kyoot&_sop=10&_ipg=120",
+  "pinkbike: FAILED (11x) 403 Client Error: Forbidden for url: https://www.pinkbike.com/buysell/list/?q=kyoot",
+  "offerup: FAILED (11x) 403 Client Error: Forbidden for url: https://offerup.com/search?q=kyoot",
   "buycycle: 37 scanned, 0 match, 0 new",
-  "craigslist: 110 scanned, 40 match, 0 new"
+  "craigslist: 109 scanned, 40 match, 1 new"
  ],
  "seen": {
   "craigslist:https://www.craigslist.org/view/d/alief-vintage-fisher-price-roly-poly/rYS5dLWAU9gGiSrpcDHxAH": "2026-09-26T20:03:41+00:00",
@@ -31,6 +31,7 @@
   "craigslist:https://www.craigslist.org/view/d/cleveland-1946-bob-wills-roly-poly-new/4mViMoyMqGyGNAo7GCM91w": "2026-09-26T20:03:41+00:00",
   "craigslist:https://www.craigslist.org/view/d/columbia-christmas-decor-rolly-polly/k11Y2e1gSiVVCrrHg1KGem": "2026-09-26T20:03:41+00:00",
   "craigslist:https://www.craigslist.org/view/d/elk-river-roly-poly-glass-beads/u5pzRBC2MzbtLGdFS7K7iC": "2026-09-26T20:03:41+00:00",
+  "craigslist:https://www.craigslist.org/view/d/greenfield-four-unused-roly-poly/cgpw6ZknkeRnWYTfPPoxcQ": "2026-10-01T15:26:07+00:00",
   "craigslist:https://www.craigslist.org/view/d/greenville-vtg-rare-bar-set-etched/6NQLue1ZS7v22LVChQ8RC3": "2026-09-26T20:03:41+00:00",
   "craigslist:https://www.craigslist.org/view/d/janesville-knickerbocker-roly-poly/oRG72a7roVf6rHt5RFmTn9": "2026-09-26T20:03:41+00:00",
   "craigslist:https://www.craigslist.org/view/d/la-habra-nfl-rolly-polly-glasses/k64aFJ62UictWmGzvgL2t5": "2026-09-26T20:03:41+00:00",
