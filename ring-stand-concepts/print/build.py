@@ -1,6 +1,11 @@
 """Printable "101 on a Tray" ring stand (no medallions), <= 3 in tall. Units: mm.
 
 Writes taipei101_tray_ring_stand.3mf (+ .stl) and a preview PNG.
+
+The tower is nearly straight like the real building. Each of the 8 flared
+modules ends in a small ledge; ledges step down in size by LEDGE_STEP mm going
+up, and the ring is aimed to come to rest on ledge CATCH_MODULE. Set RING_SIZE
+to the wearer's US ring size and rebuild.
 """
 import os, sys
 import numpy as np
@@ -10,12 +15,17 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "v2"))
 from render import notched_square  # noqa: E402
 
+# ---- ring target ----
+RING_SIZE = 10.0                     # US size; inner diameter = 11.63 + 0.8128 * size
+CATCH_MODULE = 5                     # 0 = bottom module ... 7 = top module
+LEDGE_STEP = 0.6                     # ledge corner-diameter change per module (mm) -> gentle taper
+
 # ---- dimensions ----
-TRAY_W, TRAY_H, TRAY_WALL, TRAY_FLOOR = 32.0, 7.0, 2.4, 2.5   # 64 mm square tray
-TRAY_R = 9.0                                                  # smooth rounded corners
-PODIUM_W, PODIUM_H = 12.0, 12.0
-MOD_H, N_MOD, FLARE = 6.0, 8, 0.9
-MOD_W_BOT, MOD_W_TOP = 7.7, 4.7                               # slimmer tower
+TRAY_W, TRAY_H, TRAY_WALL, TRAY_FLOOR = 28.0, 6.5, 2.4, 2.5   # 56 mm square tray
+TRAY_R = 8.0                                                  # rounded corners
+PODIUM_H = 10.0
+MOD_H, N_MOD, FLARE = 6.6, 8, 0.8
+NOTCH = 0.08                                                  # corner notch depth (fraction)
 
 
 def solid_loft(profile, shape):
@@ -57,35 +67,84 @@ def to_manifold(mesh):
                                tri_verts=np.asarray(mesh.faces, np.uint32)))
 
 
-def tray_manifold():
-    import manifold3d as mf
-    outer = mf.CrossSection([rounded_square(TRAY_W, TRAY_R)]).extrude(TRAY_H)
-    inner = (mf.CrossSection([rounded_square(TRAY_W - TRAY_WALL, TRAY_R - TRAY_WALL)])
-             .extrude(TRAY_H).translate((0, 0, TRAY_FLOOR)))
-    return outer - inner
+def ring_loft(rings):
+    """Watertight mesh from a stack of convex rings [(pts(m,2), z)], fan-capped at both ends."""
+    m = len(rings[0][0])
+    verts, faces = [], []
+    for pts, z in rings:
+        verts += [(x, y, z) for x, y in pts]
+    for k in range(len(rings) - 1):
+        a, b = k * m, (k + 1) * m
+        for i in range(m):
+            j = (i + 1) % m
+            faces += [(a + i, a + j, b + j), (a + i, b + j, b + i)]
+    bot = len(verts); verts.append((0, 0, rings[0][1]))
+    top = len(verts); verts.append((0, 0, rings[-1][1]))
+    last = (len(rings) - 1) * m
+    for i in range(m):
+        j = (i + 1) % m
+        faces += [(bot, j, i), (top, last + i, last + j)]
+    mesh = trimesh.Trimesh(np.array(verts), np.array(faces), process=True)
+    mesh.fix_normals()
+    return mesh
 
 
-def tower_profile(z0):
+def tray_mesh():
+    """Rounded-square tray; the wall cross-section (inset d, height z) is swept around the
+    outline, giving a fully rounded top lip, a soft inside floor fillet and a small
+    bottom-edge chamfer (helps against elephant's foot)."""
+    W, H, t, fl = TRAY_W, TRAY_H, TRAY_WALL, TRAY_FLOOR
+    rl, fi = t / 2, 1.5                                   # lip radius, floor fillet radius
+    sec = [(0.6, 0.0), (0.0, 0.6), (0.0, H - rl)]
+    sec += [(rl - rl * np.cos(a), H - rl + rl * np.sin(a)) for a in np.linspace(0, np.pi, 13)[1:]]
+    sec += [(t + fi - fi * np.cos(a), fl + fi - fi * np.sin(a)) for a in np.linspace(0, np.pi / 2, 7)]
+    rings = [(np.array(rounded_square(W - d, TRAY_R - d)), z) for d, z in sec]
+    return ring_loft(rings)
+
+
+def ring_diameter(size):
+    return 11.63 + 0.8128 * size
+
+
+def tower_profile(z0, shape):
+    corner = np.max(np.linalg.norm(shape, axis=1))       # ring touches the outer corners
+    d = ring_diameter(RING_SIZE)
+    # ledge (module top) half-widths: catch ledge slightly bigger than the ring,
+    # the one above slightly smaller, gentle LEDGE_STEP taper elsewhere
+    ledge = [(d + LEDGE_STEP * (CATCH_MODULE - i + 0.5)) / (2 * corner) for i in range(N_MOD)]
     z = z0 + PODIUM_H
-    p = [(z0 - 0.6, PODIUM_W), (z, MOD_W_BOT + FLARE + 1.4)]     # sloped podium (sunk 0.6 into floor)
+    pod_top = ledge[0] + 1.0
+    p = [(z0 - 0.6, pod_top + 2.6), (z, pod_top)]            # short sloped podium
     for i in range(N_MOD):
-        w = MOD_W_BOT + (MOD_W_TOP - MOD_W_BOT) * i / (N_MOD - 1)
-        p += [(z, w), (z + MOD_H, w + FLARE)]                    # flared module = ring ledge
+        p += [(z, ledge[i] - FLARE), (z + MOD_H, ledge[i])]  # flared module, ledge on top
         z += MOD_H
-    wc = MOD_W_TOP * 0.82
-    p += [(z, wc), (z + 2.0, wc + 0.25), (z + 2.0, wc * 0.8), (z + 3.5, wc * 0.8 + 0.15)]
+    wc = ledge[-1] * 0.8
+    p += [(z, wc), (z + 2.0, wc + 0.2), (z + 2.0, wc * 0.8), (z + 3.5, wc * 0.8 + 0.15)]
     z += 3.5
-    p += [(z, 2.7), (z + 3.5, 2.3)]                              # short thick spire
-    z += 3.5
-    for a in np.linspace(-0.3, np.pi / 2 - 0.25, 9):             # ball tip
-        p.append((z + 2.3 * np.sin(a) + 0.6, 2.5 * np.cos(a)))
-    return p
+    p += [(z, 2.5), (z + 3.0, 2.2)]                           # short thick spire
+    z += 3.0
+    for a in np.linspace(-0.3, np.pi / 2 - 0.25, 9):          # ball tip
+        p.append((z + 2.2 * np.sin(a) + 0.6, 2.4 * np.cos(a)))
+    return p, ledge, corner
 
 
 def build():
-    tower = solid_loft(tower_profile(TRAY_FLOOR), notched_square())
-    assert tower.is_watertight and tower.is_volume, "tower not a closed volume"
-    out = (tray_manifold() + to_manifold(tower)).to_mesh()
+    shape = notched_square(NOTCH)
+    prof, ledge, corner = tower_profile(TRAY_FLOOR, shape)
+    tower = solid_loft(prof, shape)
+    tray = tray_mesh()
+    for name, m in (("tray", tray), ("tower", tower)):
+        assert m.is_watertight and m.is_volume, f"{name} not a closed volume"
+    out = (to_manifold(tray) + to_manifold(tower)).to_mesh()
+    d = ring_diameter(RING_SIZE)
+    print(f"ring size {RING_SIZE:g} = {d:.2f} mm inner diameter")
+    for i, w in enumerate(ledge):
+        zl = TRAY_FLOOR + PODIUM_H + MOD_H * (i + 1)
+        D = 2 * w * corner
+        sz = (D - 11.63) / 0.8128
+        tag = "  <- ring rests here" if i == CATCH_MODULE else ""
+        print(f"  ledge {i + 1}: {D:5.2f} mm corner span (~size {sz:4.1f}), "
+              f"{zl:5.1f} mm up, flats {2 * w:5.2f} mm{tag}")
     return trimesh.Trimesh(out.vert_properties[:, :3], out.tri_verts)
 
 
@@ -100,7 +159,7 @@ def zbuffer(mesh, elev, azim, px=700):
     base = np.array([0.31, 0.61, 0.58])
     col = np.clip((0.25 + 0.75 * lam)[:, None] * base + spec[:, None], 0, 1)
     s = (px * 0.78) / max(np.ptp(v[:, 0]), np.ptp(v[:, 2]))
-    xy = np.c_[(v[:, 0] - v[:, 0].mean()) * s + px / 2, px / 2 - (v[:, 2] - v[:, 2].mean()) * s]
+    xy = np.c_[(v[:, 0] - (v[:, 0].max() + v[:, 0].min()) / 2) * s + px / 2, px / 2 - (v[:, 2] - (v[:, 2].max() + v[:, 2].min()) / 2) * s]
     depth = v[:, 1]
     img = np.ones((px, px, 3)); zb = np.full((px, px), np.inf)
     for f, c in zip(mesh.faces, col):
