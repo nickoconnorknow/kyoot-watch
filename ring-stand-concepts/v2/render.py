@@ -196,14 +196,14 @@ CONCEPTS.append(("5_bold_101", "5. Bold 101", loft(p5, notched_square(0.12)),
                  medallions(PH - 6, podium_face(p5, PH - 6), 3.8, 0.6), GOLD, "#7a5b1e"))
 
 
-def ring_marks(ax, profile, shape, color):
+def ring_marks(ax, profile, shape, color, zmin=30):
     """Side profile + where ring sizes 4 / 8 / 13 come to rest (corner span)."""
     corner = np.max(np.linalg.norm(shape, axis=1))
     zs = np.array([p[0] for p in profile]); ws = np.array([p[1] for p in profile])
     ax.fill_betweenx(zs, -ws, ws, color=color, lw=0, alpha=0.9)
     for d, lab in [(14.9, "size 4"), (18.2, "size 8"), (22.2, "size 13")]:
         # highest point whose corner diameter >= ring diameter (above podium)
-        cand = [(z, w) for z, w in profile if z > 30 and 2 * w * corner >= d]
+        cand = [(z, w) for z, w in profile if z > zmin and 2 * w * corner >= d]
         if cand:
             zr = max(c[0] for c in cand)
             ax.plot([-d / 2, d / 2], [zr, zr], color="#c0392b", lw=1.6)
