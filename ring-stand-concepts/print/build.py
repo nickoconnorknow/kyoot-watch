@@ -21,8 +21,10 @@ CATCH_MODULE = 5                     # 0 = bottom module ... 7 = top module
 LEDGE_STEP = 0.6                     # ledge corner-diameter change per module (mm) -> gentle taper
 
 # ---- dimensions ----
-TRAY_W, TRAY_H, TRAY_WALL, TRAY_FLOOR = 28.0, 6.5, 2.4, 2.5   # 56 mm square tray
-TRAY_R = 8.0                                                  # rounded corners
+TRAY_X, TRAY_Y = 35.0, 22.0         # 70 x 44 mm rectangular "plaza" tray (half-sizes)
+TRAY_H, TRAY_WALL, TRAY_FLOOR = 6.0, 2.4, 2.5
+TRAY_R = 4.0                         # modest corner radius (crisp, architectural)
+TOWER_X = -12.0                      # tower stands toward one end, open dish at the other
 PODIUM_H = 10.0
 MOD_H, N_MOD, FLARE = 6.6, 8, 0.8
 NOTCH = 0.12                 # corner notch step (fraction of half-width): wide enough to wipe out
@@ -57,11 +59,11 @@ def solid_loft(profile, shape):
     return mesh
 
 
-def rounded_square(half, r, seg=16):
+def rounded_rect(hx, hy, r, seg=12):
     pts = []
     for cx, cy, a0 in [(1, 1, 0), (-1, 1, 90), (-1, -1, 180), (1, -1, 270)]:
         for a in np.radians(np.linspace(a0, a0 + 90, seg)):
-            pts.append((cx * (half - r) + r * np.cos(a), cy * (half - r) + r * np.sin(a)))
+            pts.append((cx * (hx - r) + r * np.cos(a), cy * (hy - r) + r * np.sin(a)))
     return pts
 
 
@@ -94,15 +96,14 @@ def ring_loft(rings):
 
 
 def tray_mesh():
-    """Rounded-square tray; the wall cross-section (inset d, height z) is swept around the
-    outline, giving a fully rounded top lip, a soft inside floor fillet and a small
-    bottom-edge chamfer (helps against elephant's foot)."""
-    W, H, t, fl = TRAY_W, TRAY_H, TRAY_WALL, TRAY_FLOOR
-    rl, fi = t / 2, 1.5                                   # lip radius, floor fillet radius
-    sec = [(0.6, 0.0), (0.0, 0.6), (0.0, H - rl)]
-    sec += [(rl - rl * np.cos(a), H - rl + rl * np.sin(a)) for a in np.linspace(0, np.pi, 13)[1:]]
-    sec += [(t + fi - fi * np.cos(a), fl + fi - fi * np.sin(a)) for a in np.linspace(0, np.pi / 2, 7)]
-    rings = [(np.array(rounded_square(W - d, TRAY_R - d)), z) for d, z in sec]
+    """Rectangular tray; the wall cross-section (inset d, height z) is swept around the
+    outline: flat top with small chamfers (smooth to the touch but crisp-looking), a
+    soft fillet where the inside floor meets the wall, and a bottom chamfer."""
+    H, t, fl = TRAY_H, TRAY_WALL, TRAY_FLOOR
+    c, fi = 0.5, 1.0                                      # lip chamfer, floor fillet radius
+    sec = [(0.6, 0.0), (0.0, 0.6), (0.0, H - c), (c, H), (t - c, H), (t, H - c)]
+    sec += [(t + fi - fi * np.cos(a), fl + fi - fi * np.sin(a)) for a in np.linspace(0, np.pi / 2, 5)]
+    rings = [(np.array(rounded_rect(TRAY_X - d, TRAY_Y - d, TRAY_R - d)), z) for d, z in sec]
     return ring_loft(rings)
 
 
@@ -129,10 +130,8 @@ def tower_profile(z0, shape):
     d = ring_diameter(RING_SIZE)
     ledge = [(d + LEDGE_STEP * (CATCH_MODULE - i + 0.5)) / (2 * corner) for i in range(N_MOD)]
     pod_top = ledge[0] + 1.0
-    pod_bot, r = pod_top + 2.6, 1.5
-    p = [(z0 - 0.6, pod_bot + r)]
-    # concave cove where the podium meets the tray floor
-    p += [(z0 + r - r * np.cos(a), pod_bot + r - r * np.sin(a)) for a in np.linspace(0, np.pi / 2, 7)]
+    pod_bot = pod_top + 1.4                                  # steep, boxy podium
+    p = [(z0 - 0.6, pod_bot + 1.0), (z0 + 0.4, pod_bot)]     # planar 45 deg foot (no crevice)
 
     def step(zt, w_lip, w_next, dz=STEP_DZ, lip=LIP):
         # softened lip, then a sloped (not flat) ledge down to the next wall
@@ -148,12 +147,9 @@ def tower_profile(z0, shape):
         zl.append(zt - LIP)
     wc = ledge[-1] * 0.8
     zt += 2.4; p += step(zt, wc + 0.2, wc * 0.8, 0.4, 0.2)
-    zt += 1.8; p += step(zt, wc * 0.8 + 0.15, 2.5, 0.5, 0.2)
+    zt += 1.8; p += step(zt, wc * 0.8 + 0.15, 2.3, 0.5, 0.2)
     z = zt + 0.5
-    p += [(z + 2.6, 2.2)]                                       # short thick spire
-    z += 2.6
-    for a in np.linspace(-0.3, np.pi / 2 - 0.25, 9):            # ball tip
-        p.append((z + 2.2 * np.sin(a) + 0.6, 2.4 * np.cos(a)))
+    p += [(z + 2.0, 2.3), (z + 2.0, 1.5), (z + 5.8, 1.0)]      # square mast + flat-topped spire
     return p, ledge, zl, corner
 
 
@@ -174,7 +170,7 @@ def ring_mesh(z_seat):
             a, b = i * m + j, ((i + 1) % n) * m + j
             a2, b2 = i * m + (j + 1) % m, ((i + 1) % n) * m + (j + 1) % m
             F += [(a, b, b2), (a, b2, a2)]
-    ring = trimesh.Trimesh(V, np.array(F), process=True); ring.fix_normals()
+    ring = trimesh.Trimesh(V + (TOWER_X, 0, 0), np.array(F), process=True); ring.fix_normals()
     return ring
 
 
@@ -182,6 +178,7 @@ def build():
     shape = smooth_section()
     prof, ledge, zl, corner = tower_profile(TRAY_FLOOR, shape)
     tower = solid_loft(prof, shape)
+    tower.apply_translation((TOWER_X, 0, 0))
     tray = tray_mesh()
     for name, m in (("tray", tray), ("tower", tower)):
         assert m.is_watertight and m.is_volume, f"{name} not a closed volume"
@@ -248,30 +245,31 @@ def preview(mesh, size, prof, z_seat):
     d = ring_diameter(RING_SIZE)
     fig = plt.figure(figsize=(15, 6.2), dpi=130)
     gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 0.8])
-    ax = fig.add_subplot(gs[0]); ax.imshow(zbuffer([(mesh, TEAL), (ring, GOLD)], 12, 35, px=800)); ax.axis("off")
+    ax = fig.add_subplot(gs[0]); ax.imshow(zbuffer([(mesh, TEAL), (ring, GOLD)], 18, 30, px=800)); ax.axis("off")
     ax.set_title("with a size %g ring" % RING_SIZE, fontsize=11)
     ax = fig.add_subplot(gs[1])
-    box = trimesh.creation.box(extents=(26, 26, 26)); box.apply_translation((0, 0, z_seat + 2))
+    box = trimesh.creation.box(extents=(26, 26, 26)); box.apply_translation((TOWER_X, 0, z_seat + 2))
     ax.imshow(zbuffer([(mesh, TEAL), (ring, GOLD)], 22, 35, px=800, frame=box)); ax.axis("off")
     ax.set_title("close-up: ring resting on ledge %d" % (CATCH_MODULE + 1), fontsize=11)
     ax = fig.add_subplot(gs[2])
     zz = np.array([q[0] for q in prof]); ww = np.array([q[1] for q in prof])
     corner = np.max(np.linalg.norm(smooth_section(), axis=1))
     lt = TEAL * 0.55 + 0.45
-    ax.fill_between([-TRAY_W, TRAY_W], 0, TRAY_FLOOR, color=lt, lw=0)
-    for x in (-TRAY_W, TRAY_W - TRAY_WALL):
+    ax.fill_between([-TRAY_X, TRAY_X], 0, TRAY_FLOOR, color=lt, lw=0)
+    for x in (-TRAY_X, TRAY_X - TRAY_WALL):
         ax.add_patch(plt.Rectangle((x, 0), TRAY_WALL, TRAY_H, color=lt, lw=0))
-    ax.fill_betweenx(zz, -ww * corner, ww * corner, color=lt, lw=0, label="corners")
-    ax.fill_betweenx(zz, -ww, ww, color=TEAL, lw=0, label="flat faces")
-    ax.add_patch(plt.Rectangle((d / 2, z_seat), RING_THICK, RING_BAND, color=GOLD, label="size %g ring" % RING_SIZE))
-    ax.add_patch(plt.Rectangle((-d / 2 - RING_THICK, z_seat), RING_THICK, RING_BAND, color=GOLD))
+    X = TOWER_X
+    ax.fill_betweenx(zz, X - ww * corner, X + ww * corner, color=lt, lw=0, label="corners")
+    ax.fill_betweenx(zz, X - ww, X + ww, color=TEAL, lw=0, label="flat faces")
+    ax.add_patch(plt.Rectangle((X + d / 2, z_seat), RING_THICK, RING_BAND, color=GOLD, label="size %g ring" % RING_SIZE))
+    ax.add_patch(plt.Rectangle((X - d / 2 - RING_THICK, z_seat), RING_THICK, RING_BAND, color=GOLD))
     ax.axhline(z_seat, color="#b5462e", lw=0.8, ls="--")
-    ax.text(-TRAY_W + 1, z_seat - 4, 'ring sits %.0f mm (%.2f") up' % (z_seat, z_seat / 25.4), fontsize=8, color="#b5462e")
-    ax.set_aspect("equal"); ax.set_xlim(-TRAY_W - 1, TRAY_W + 1); ax.set_ylim(-1, size[2] + 3)
+    ax.text(X + 12, z_seat - 4, 'ring sits %.0f mm (%.2f") up' % (z_seat, z_seat / 25.4), fontsize=8, color="#b5462e")
+    ax.set_aspect("equal"); ax.set_xlim(-TRAY_X - 1, TRAY_X + 1); ax.set_ylim(-1, size[2] + 3)
     ax.set_xlabel("mm", fontsize=8); ax.tick_params(labelsize=7); ax.legend(fontsize=7, loc="upper right")
     ax.set_title("side view", fontsize=11)
-    fig.suptitle('Taipei 101 ring stand, size %g ring: %.0f mm (%.2f") tall, %.0f mm (%.2f") square tray'
-                 % (RING_SIZE, size[2], size[2] / 25.4, size[0], size[0] / 25.4), fontsize=13)
+    fig.suptitle('Taipei 101 ring stand, size %g ring: %.0f mm (%.2f") tall, %.0f x %.0f mm (%.2f x %.2f") tray'
+                 % (RING_SIZE, size[2], size[2] / 25.4, size[0], size[1], size[0] / 25.4, size[1] / 25.4), fontsize=13)
     fig.tight_layout(); fig.savefig(os.path.join(HERE, "preview.png"), bbox_inches="tight")
 
 
