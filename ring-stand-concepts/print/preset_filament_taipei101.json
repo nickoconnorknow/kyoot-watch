@@ -1,0 +1,14 @@
+{
+    "type": "filament",
+    "name": "Taipei101 PLA Matte @BBL A1M",
+    "inherits": "Bambu PLA Matte @BBL A1M",
+    "from": "User",
+    "instantiation": "true",
+    "version": "02.08.04.57",
+    "filament_settings_id": [
+        "Taipei101 PLA Matte @BBL A1M"
+    ],
+    "slow_down_layer_time": [
+        "8"
+    ]
+}

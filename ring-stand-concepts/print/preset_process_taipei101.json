@@ -1,0 +1,28 @@
+{
+    "type": "process",
+    "name": "Taipei101 0.08mm @BBL A1M",
+    "inherits": "0.08mm Extra Fine @BBL A1M",
+    "from": "User",
+    "instantiation": "true",
+    "version": "02.08.04.57",
+    "print_settings_id": "Taipei101 0.08mm @BBL A1M",
+    "wall_loops": "3",
+    "wall_generator": "arachne",
+    "precise_outer_wall": "1",
+    "elefant_foot_compensation": "0.15",
+    "top_shell_layers": "10",
+    "bottom_shell_layers": "6",
+    "sparse_infill_density": "20%",
+    "sparse_infill_pattern": "gyroid",
+    "outer_wall_speed": [
+        "60"
+    ],
+    "inner_wall_speed": [
+        "120"
+    ],
+    "seam_position": "aligned",
+    "top_surface_pattern": "monotonicline",
+    "ironing_type": "no ironing",
+    "enable_support": "0",
+    "brim_type": "no_brim"
+}
