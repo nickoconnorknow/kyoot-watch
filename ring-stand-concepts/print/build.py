@@ -17,7 +17,7 @@ from render import notched_square  # noqa: E402
 
 # ---- ring target ----
 RING_SIZE = 9.0                      # US size; inner diameter = 11.63 + 0.8128 * size
-CATCH_MODULE = 5                     # 0 = bottom module ... 7 = top module
+CATCH_MODULE = 3                     # 0 = bottom module ... 7 = top module
 LEDGE_STEP = 0.6                     # ledge corner-diameter change per module (mm) -> gentle taper
 
 # ---- dimensions ----
