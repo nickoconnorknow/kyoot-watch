@@ -3,20 +3,20 @@
   "bikepacking_coop": 0,
   "buycycle": 0,
   "craigslist": 0,
-  "ebay": 61,
-  "offerup": 61,
-  "pinkbike": 61,
+  "ebay": 62,
+  "offerup": 62,
+  "pinkbike": 62,
   "rad_bazaar": 0
  },
- "last_run": "2026-10-26T16:06:14+00:00",
+ "last_run": "2026-10-27T03:38:05+00:00",
  "last_summary": [
   "rad_bazaar: 3 scanned, 1 match, 0 new",
   "bikepacking_coop: 61 scanned, 0 match, 0 new",
-  "ebay: FAILED (61x) 403 Client Error: Forbidden for url: https://www.ebay.com/sch/i.html?_nkw=kyoot&_sop=10&_ipg=120",
-  "pinkbike: FAILED (61x) 403 Client Error: Forbidden for url: https://www.pinkbike.com/buysell/list/?q=kyoot",
-  "offerup: FAILED (61x) 403 Client Error: Forbidden for url: https://offerup.com/search?q=kyoot",
-  "buycycle: 37 scanned, 0 match, 0 new",
-  "craigslist: 110 scanned, 36 match, 0 new"
+  "ebay: FAILED (62x) 403 Client Error: Forbidden for url: https://www.ebay.com/sch/i.html?_nkw=kyoot&_sop=10&_ipg=120",
+  "pinkbike: FAILED (62x) 403 Client Error: Forbidden for url: https://www.pinkbike.com/buysell/list/?q=kyoot",
+  "offerup: FAILED (62x) 403 Client Error: Forbidden for url: https://offerup.com/search?q=kyoot",
+  "buycycle: 21 scanned, 0 match, 0 new",
+  "craigslist: 108 scanned, 34 match, 0 new"
  ],
  "seen": {
   "craigslist:https://www.craigslist.org/view/d/alief-vintage-fisher-price-roly-poly/rYS5dLWAU9gGiSrpcDHxAH": "2026-09-26T20:03:41+00:00",
